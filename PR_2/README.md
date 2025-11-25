@@ -63,6 +63,9 @@ int n = nLine.isEmpty() ? 50 : Integer.parseInt(nLine);
 if (n < 40) { System.out.println("Кількість менше 40 — встановлено 40"); n = 40; }
 if (n > 60) { System.out.println("Кількість більше 60 — встановлено 60"); n = 60; }
 ```
+
+[Скріншот №1](<img width="987" height="414" alt="image" src="https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74" />)
+
 ---
 
 # 2. Генерація випадкового масиву
