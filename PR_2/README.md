@@ -66,6 +66,9 @@ if (n > 60) { System.out.println("Кількість більше 60 — вст�
 
 [Скріншот №1](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)
 
+[![Скріншот №1](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)
+
+
 ---
 
 # 2. Генерація випадкового масиву
