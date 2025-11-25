@@ -64,9 +64,8 @@ if (n < 40) { System.out.println("Кількість менше 40 — вста�
 if (n > 60) { System.out.println("Кількість більше 60 — встановлено 60"); n = 60; }
 ```
 
-[Скріншот №1](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)
+[Скріншоту №1](###скріншот-№1)
 
-[![Скріншот №1](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)](https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74)
 
 
 ---
@@ -324,13 +323,19 @@ if (ans.equals("Y")) {
 
 Продубльовані скріншоту зі звіту:
 
+### Скріншот №1
+
 <img width="987" height="414" alt="image" src="https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74" />
 
 Рис1. Стандартна робота програми
 
+### Скріншот №2
+
 <img width="941" height="132" alt="image" src="https://github.com/user-attachments/assets/5a3c90f9-9e03-4043-99de-d1c2c04be1a5" />
 
 Рис2. Вивід повної інформації про обидва масиви
+
+### Скріншот №3
 
 <img width="941" height="558" alt="image" src="https://github.com/user-attachments/assets/896528df-493b-454c-9e2f-76fd585427a6" />
 
