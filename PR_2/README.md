@@ -322,16 +322,26 @@ if (ans.equals("Y")) {
 Продубльовані скріншоту зі звіту:
 
 <a name="screenshot1"></a>
+
+# Скріншот №1
+
 <img width="987" height="414" alt="image" src="https://github.com/user-attachments/assets/dc37e182-0191-4560-8426-be644408ab74" />
+
 Рис1. Стандартна робота програми
 
+<a name="screenshot2"></a>
 
+-----
 
 # Скріншот №2
 
 <img width="941" height="132" alt="image" src="https://github.com/user-attachments/assets/5a3c90f9-9e03-4043-99de-d1c2c04be1a5" />
 
 Рис2. Вивід повної інформації про обидва масиви
+
+-----
+
+<a name="screenshot3"></a>
 
 # Скріншот №3
 
