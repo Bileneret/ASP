@@ -30,7 +30,6 @@ public class FileFinder_Zavd2 {
         List<Path> files = new ArrayList<>();
 
         if (!recursive) {
-            // тільки поточна директорія
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(start)) {
                 for (Path entry : stream) {
                     if (Files.isRegularFile(entry)) {
@@ -41,15 +40,29 @@ public class FileFinder_Zavd2 {
             return files;
         }
 
-        // рекурсивний обхід
         Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 if (Files.isRegularFile(file)) files.add(file);
                 return FileVisitResult.CONTINUE;
             }
-        });
 
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                // Перевіряємо доступ до директорії
+                if (!Files.isReadable(dir)) {
+                    System.out.println("Пропущено директорію через відсутність доступу: " + dir);
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                System.out.println("Не вдалося відкрити файл: " + file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
         return files;
     }
 
@@ -136,12 +149,18 @@ public class FileFinder_Zavd2 {
     // -------------------- Запис результатів --------------------
 
     private static void writeResultsToFile(
-            double wtCollect, double wtProcess, double wtTotal,
-            double wdCollect, double wdProcess, double wdTotal,
+            double collectTime,
+            double wtProcess, double wtTotal,
+            double wdProcess, double wdTotal,
             long minKB, int threads,
             List<Path> matched
     ) {
         StringBuilder sb = new StringBuilder();
+
+        sb.append("============================\n");
+        sb.append("       FILE COLLECTING\n");
+        sb.append("============================\n");
+        sb.append(String.format("Час збору файлів: %.3f ms%n", collectTime));
 
         sb.append("============================\n");
         sb.append("        Work stealing\n");
@@ -161,8 +180,8 @@ public class FileFinder_Zavd2 {
             sb.append(String.format("Work stealing - %.3f ms <- швидше%n", wtTotal));
             sb.append(String.format("Work dealing - %.3f ms %n", wdTotal));
         } else {
-            sb.append(String.format("Work dealing - %.3f ms <- швидше%n", wdTotal));
             sb.append(String.format("Work stealing - %.3f ms %n", wtTotal));
+            sb.append(String.format("Work dealing - %.3f ms <- швидше%n", wdTotal));
         }
         sb.append("============================\n");
 
@@ -208,29 +227,28 @@ public class FileFinder_Zavd2 {
 
         readLine("\nГотові? Натисніть Enter...");
 
+        // ==================== Збір файлів ====================
+        long collectStart = System.nanoTime();
+        List<Path> allFiles = collectFiles(start, recursive);
+        long collectEnd = System.nanoTime();
+        double collectTime = (collectEnd - collectStart) / 1_000_000.0;
+        System.out.printf("Збір файлів завершено. Знайдено всього %d файлів. Час: %.3f ms%n", allFiles.size(), collectTime);
+
         // ==================== Work Stealing ====================
-
-        long wt0 = System.nanoTime();
-        List<Path> filesSteal = collectFiles(start, recursive);
-        long wtCollectEnd = System.nanoTime();
-
-        ForkJoinPool fj = new ForkJoinPool();
         long wtProcessStart = System.nanoTime();
-        FileCountTask root = new FileCountTask(filesSteal, 0, filesSteal.size(), minBytes);
+        ForkJoinPool fj = new ForkJoinPool();
+        FileCountTask root = new FileCountTask(allFiles, 0, allFiles.size(), minBytes);
         List<Path> matchedSteal = fj.invoke(root);
         long wtProcessEnd = System.nanoTime();
-        long wt1 = System.nanoTime();
         fj.shutdown();
 
-        double wtCollect = (wtCollectEnd - wt0) / 1_000_000.0;
         double wtProcess = (wtProcessEnd - wtProcessStart) / 1_000_000.0;
-        double wtTotal = (wt1 - wt0) / 1_000_000.0;
+        double wtTotal = wtProcess; // тепер total = process, бо збір файлів винесено окремо
 
-        System.out.printf("\nWork Stealing завершено. Загальний час: %.3f ms%n", wtTotal);
+        System.out.printf("\nWork Stealing завершено. Час обробки: %.3f ms%n", wtProcess);
         readLine("Натисніть Enter для Work Dealing...");
 
         // ==================== Work Dealing ====================
-
         int threads;
         try {
             threads = Integer.parseInt(readLine("Кількість потоків (натисніть Enter для автопідбору): "));
@@ -239,24 +257,17 @@ public class FileFinder_Zavd2 {
             threads = Runtime.getRuntime().availableProcessors();
         }
 
-        long wd0 = System.nanoTime();
-        List<Path> filesDeal = collectFiles(start, recursive);
-        long wdCollectEnd = System.nanoTime();
-
         long wdProcessStart = System.nanoTime();
-        List<Path> matchedDeal = countWithFixedPool(filesDeal, threads, minBytes);
+        List<Path> matchedDeal = countWithFixedPool(allFiles, threads, minBytes);
         long wdProcessEnd = System.nanoTime();
-        long wd1 = System.nanoTime();
 
-        double wdCollect = (wdCollectEnd - wd0) / 1_000_000.0;
         double wdProcess = (wdProcessEnd - wdProcessStart) / 1_000_000.0;
-        double wdTotal = (wd1 - wd0) / 1_000_000.0;
+        double wdTotal = wdProcess;
 
-        System.out.printf("\nWork Dealing завершено. Загальний час: %.3f ms%n", wdTotal);
+        System.out.printf("\nWork Dealing завершено. Час обробки: %.3f ms%n", wdProcess);
         readLine("Натисніть Enter для порівняння...");
 
-        //===================== Вивід =====================
-
+        //===================== Вивід ======================
         String fasterSteal = wtTotal < wdTotal ? "\033[1;32mWork Stealing\033[0m" : "Work Stealing";
         String fasterDeal = wdTotal < wtTotal ? "\033[1;32mWork Dealing\033[0m" : "Work Dealing";
 
@@ -266,17 +277,18 @@ public class FileFinder_Zavd2 {
         System.out.printf("%s = %.3f ms%n", fasterSteal, wtTotal);
         System.out.printf("%s = %.3f ms%n", fasterDeal, wdTotal);
 
-        //===================== Запис у файл =====================
+        //===================== Запис у файл ======================
         writeResultsToFile(
-                wtCollect, wtProcess, wtTotal,
-                wdCollect, wdProcess, wdTotal,
+                collectTime,
+                wtProcess, wtTotal,
+                wdProcess, wdTotal,
                 kb, threads,
                 wtTotal < wdTotal ? matchedSteal : matchedDeal
         );
 
         System.out.println("\nРезультати записано у FinderResult.txt");
 
-        //===================== Вивести результати? =====================
+        //===================== Вивести результати? ======================
         String show = readLine("Хочете вивести результати тут? Y/N: ");
         if (show.equalsIgnoreCase("Y")) {
             System.out.println();
